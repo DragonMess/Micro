@@ -9,6 +9,8 @@ services:
       - ./database:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - prometheus_monitoring
 
   backend:
     build: ./backend
@@ -20,10 +22,34 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "3001:3001"
+    networks:
+      - prometheus_monitoring
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "3003:3000"
     depends_on:
       - backend
+    networks:
+      - prometheus_monitoring
+
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    ports:
+      - "9090:9090"
+    networks:
+      - prometheus_monitoring
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    ports:
+      - "3000:3000"
+    networks:
+      - prometheus_monitoring
+
+networks:
+  prometheus_monitoring:
+    driver: bridge

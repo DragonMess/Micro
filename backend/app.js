@@ -8,12 +8,12 @@ const { Pool } = require("pg");
 const app = express();
 
 //Define coors option to resource sharing
-const corsOptions = {
-  origin: "http://localhost:3000",
-  credentials: true, //access-control-allow-credentials:true
-  optionSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: "http://localhost:3000",
+//   credentials: true, //access-control-allow-credentials:true
+//   optionSuccessStatus: 200
+// };
+app.use(cors());
 
 // create dynamic connection -pool
 const pool = new Pool({
@@ -51,6 +51,6 @@ app.post("/download-random-image", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3001, () => {
-  console.log(`Backend running on port ${port}`);
+app.listen(3001, () => {
+  console.log(`Backend running on port 3001`);
 });
