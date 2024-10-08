@@ -2,17 +2,26 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const express = require("express");
+
+const Prometheus = require("prom-client");
+const register = new Prometheus.Registry();
+register.setDefaultLabels({
+  app: "download-random-image_app"
+});
+Prometheus.collectDefaultMetrics({ register });
+
+const http_request_counter = new Prometheus.Counter({
+  name: "myapp_http_request_count",
+  help: "Count of HTTP requests made to my app",
+  labelNames: ["method", "route", "statusCode"]
+});
+register.registerMetric(http_request_counter);
+
 const cors = require("cors");
 const axios = require("axios");
 const { Pool } = require("pg");
 const app = express();
 
-//Define coors option to resource sharing
-// const corsOptions = {
-//   origin: "http://localhost:3000",
-//   credentials: true, //access-control-allow-credentials:true
-//   optionSuccessStatus: 200
-// };
 app.use(cors());
 
 // create dynamic connection -pool
@@ -25,6 +34,54 @@ const pool = new Pool({
 });
 
 const url = "https://place.dog";
+
+app.use(function (req, res, next) {
+  // Increment the HTTP request counter
+  http_request_counter
+    .labels({ method: req.method, route: req.originalUrl, statusCode: res.statusCode })
+    .inc();
+
+  next();
+});
+
+app.get("/metrics", function (req, res) {
+  res.setHeader("Content-Type", register.contentType);
+
+  register.metrics().then((data) => res.status(200).send(data));
+});
+
+app.get("/", (req, res) => {
+  res.json([
+    {
+      Actors: [
+        {
+          name: "Tom Cruise",
+          age: 62,
+          "Born At": "Syracuse, NY",
+          Birthdate: "July 3, 1962",
+          photo: "https://jsonformatter.org/img/tom-cruise.jpg",
+          wife: null,
+          weight: 67.5,
+          hasChildren: true,
+          hasGreyHair: false,
+          children: ["Suri", "Isabella Jane", "Connor"]
+        },
+        {
+          name: "Robert Downey Jr.",
+          age: 59,
+          "Born At": "New York City, NY",
+          Birthdate: "April 4, 1965",
+          photo: "https://jsonformatter.org/img/Robert-Downey-Jr.jpg",
+          wife: "Susan Downey",
+          weight: 77.1,
+          hasChildren: true,
+          hasGreyHair: false,
+          children: ["Indio Falconer", "Avri Roel", "Exton Elias"]
+        }
+      ]
+    }
+  ]);
+});
 
 app.post("/download-random-image", async (req, res) => {
   try {
